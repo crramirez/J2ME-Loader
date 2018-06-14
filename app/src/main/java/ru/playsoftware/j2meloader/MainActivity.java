@@ -38,9 +38,13 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import javax.microedition.shell.ConfigActivity;
 
@@ -52,7 +56,6 @@ import ru.playsoftware.j2meloader.appsdb.AppItemDao;
 import ru.playsoftware.j2meloader.base.BaseActivity;
 import ru.playsoftware.j2meloader.dialogs.AboutDialogFragment;
 import ru.playsoftware.j2meloader.dialogs.HelpDialogFragment;
-import ru.playsoftware.j2meloader.donations.DonationsActivity;
 import ru.playsoftware.j2meloader.settings.SettingsActivity;
 import ru.playsoftware.j2meloader.util.FileUtils;
 import ru.playsoftware.j2meloader.util.JarConverter;
@@ -91,10 +94,56 @@ public class MainActivity extends BaseActivity {
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				}
+			} else {
+
+				//Uri.parse("file:///android_asset/app.jad");
+
+				try {
+					String jadFilePath = copyFromAsset("app.jad");
+					copyFromAsset("app.jar");
+
+					JarConverter converter = new JarConverter(this);
+					converter.execute(jadFilePath).get();
+
+
+					AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
+					Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
+					startActivity(i);
+
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+
 			}
+
+
 		}
 	}
 
+	private String copyFromAsset(String assetPath) throws IOException {
+
+		File dirTmp = new File(getApplicationInfo().dataDir, "tmp");
+		dirTmp.mkdir();
+
+		File dest = new File(dirTmp, new File(assetPath).getName());
+
+		try (InputStream is = getAssets().open(assetPath); OutputStream os = new FileOutputStream(dest)) {
+
+			byte[] buffer = new byte[1024];
+			int read;
+			while((read = is.read(buffer)) != -1){
+				os.write(buffer, 0, read);
+			}
+		}
+
+		return dest.getAbsolutePath();
+
+	}
 	private void setupActivity() {
 		initFolders();
 		checkActionBar();
@@ -176,10 +225,6 @@ public class MainActivity extends BaseActivity {
 			case R.id.action_help:
 				HelpDialogFragment helpDialogFragment = new HelpDialogFragment();
 				helpDialogFragment.show(getSupportFragmentManager(), "help");
-				break;
-			case R.id.action_donate:
-				Intent donationsIntent = new Intent(this, DonationsActivity.class);
-				startActivity(donationsIntent);
 				break;
 			case R.id.action_exit_app:
 				finish();
