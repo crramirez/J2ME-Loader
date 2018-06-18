@@ -83,8 +83,11 @@ public class MainActivity extends BaseActivity {
 		sp = PreferenceManager.getDefaultSharedPreferences(this);
 		if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
 				!= PackageManager.PERMISSION_GRANTED) {
+
 			ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
 					MY_PERMISSIONS_REQUEST_WRITE_STORAGE);
+
+
 		} else {
 			setupActivity();
 			if (savedInstanceState == null && uri != null) {
@@ -101,12 +104,15 @@ public class MainActivity extends BaseActivity {
 				try {
 					String jadFilePath = copyFromAsset("app.jad");
 					copyFromAsset("app.jar");
+					AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
 
+					String appName = item.getPath();
+					copyFromAssetTo("settings.xml", new File(getFilesDir().getParent() + File.separator + "shared_prefs",
+							appName + ".xml").getAbsolutePath());
 					JarConverter converter = new JarConverter(this);
 					converter.execute(jadFilePath).get();
 
 
-					AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
 					Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
 					startActivity(i);
 
@@ -125,6 +131,24 @@ public class MainActivity extends BaseActivity {
 		}
 	}
 
+	private boolean copyFromAssetTo(String assetPath, String dest) throws IOException {
+
+
+		try (InputStream is = getAssets().open(assetPath); OutputStream os = new FileOutputStream(dest)) {
+
+			byte[] buffer = new byte[1024];
+			int read;
+			while ((read = is.read(buffer)) != -1) {
+				os.write(buffer, 0, read);
+			}
+		} catch (FileNotFoundException e) {
+			return false;
+		}
+
+
+		return true;
+	}
+
 	private String copyFromAsset(String assetPath) throws IOException {
 
 		File dirTmp = new File(getApplicationInfo().dataDir, "tmp");
@@ -132,14 +156,7 @@ public class MainActivity extends BaseActivity {
 
 		File dest = new File(dirTmp, new File(assetPath).getName());
 
-		try (InputStream is = getAssets().open(assetPath); OutputStream os = new FileOutputStream(dest)) {
-
-			byte[] buffer = new byte[1024];
-			int read;
-			while((read = is.read(buffer)) != -1){
-				os.write(buffer, 0, read);
-			}
-		}
+		copyFromAssetTo(assetPath, dest.getAbsolutePath());
 
 		return dest.getAbsolutePath();
 
