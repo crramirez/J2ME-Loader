@@ -99,36 +99,39 @@ public class MainActivity extends BaseActivity {
 				}
 			} else {
 
-				//Uri.parse("file:///android_asset/app.jad");
 
-				try {
-					String jadFilePath = copyFromAsset("app.jad");
-					copyFromAsset("app.jar");
-					AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
-
-					String appName = item.getPath();
-					copyFromAssetTo("settings.xml", new File(getFilesDir().getParent() + File.separator + "shared_prefs",
-							appName + ".xml").getAbsolutePath());
-					JarConverter converter = new JarConverter(this);
-					converter.execute(jadFilePath).get();
-
-
-					Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
-					startActivity(i);
-
-
-				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				} catch (ExecutionException e) {
-					e.printStackTrace();
-				}
+				setupPortedApp();
 
 			}
 
 
 		}
+	}
+
+	private void setupPortedApp() {
+		try {
+            String jadFilePath = copyFromAsset("app.jad");
+            copyFromAsset("app.jar");
+            JarConverter converter = new JarConverter(this);
+			converter.execute(jadFilePath).get();
+
+			AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
+
+			String appName = item.getPath();
+			copyFromAssetTo("settings.xml", new File(getFilesDir().getParent() + File.separator + "shared_prefs",
+					appName + ".xml").getAbsolutePath());
+
+            Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
+            startActivity(i);
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
 	}
 
 	private boolean copyFromAssetTo(String assetPath, String dest) throws IOException {
@@ -181,6 +184,7 @@ public class MainActivity extends BaseActivity {
 			case MY_PERMISSIONS_REQUEST_WRITE_STORAGE:
 				if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 					setupActivity();
+					setupPortedApp();
 				} else {
 					Toast.makeText(this, R.string.permission_request_failed, Toast.LENGTH_SHORT).show();
 					finish();
