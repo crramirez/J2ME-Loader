@@ -115,14 +115,8 @@ public class MainActivity extends BaseActivity {
             JarConverter converter = new JarConverter(this);
 			converter.execute(jadFilePath).get();
 
-			AppItem item = (AppItem) appsListFragment.getListAdapter().getItem(0);
 
-			String appName = item.getPath();
-			copyFromAssetTo("settings.xml", new File(getFilesDir().getParent() + File.separator + "shared_prefs",
-					appName + ".xml").getAbsolutePath());
 
-            Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
-            startActivity(i);
 
 
         } catch (IOException e) {
@@ -279,5 +273,21 @@ public class MainActivity extends BaseActivity {
 		AppsListAdapter adapter = (AppsListAdapter) appsListFragment.getListAdapter();
 		adapter.setItems(apps);
 		adapter.notifyDataSetChanged();
+
+		if (apps.size() != 0) {
+
+			AppItem item = apps.get(0);
+
+			String appName = item.getPath();
+			try {
+				copyFromAssetTo("settings.xml", new File(getFilesDir().getParent() + File.separator + "shared_prefs",
+						appName + ".xml").getAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			Intent i = new Intent(Intent.ACTION_DEFAULT, Uri.parse(item.getPathExt()), this, ConfigActivity.class);
+			startActivity(i);
+		}
 	}
 }
